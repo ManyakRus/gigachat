@@ -1,6 +1,7 @@
 package gigachat
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	protocol "github.com/ManyakRus/gigachat/api/protocol"
@@ -8,11 +9,14 @@ import (
 	"github.com/ManyakRus/starter/log"
 	"github.com/ManyakRus/starter/micro"
 	"github.com/ManyakRus/starter/stopapp"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/oauth"
 	"google.golang.org/grpc/examples/data"
+	"io"
+	"net/http"
 )
 
 // Conn - соединение grpc с GigaChat
@@ -120,4 +124,105 @@ func Start() {
 	stopapp.GetWaitGroup_Main().Add(1)
 	go WaitStop()
 
+}
+
+func ConnectHttp_err() error {
+	client := &http.Client{}
+
+	marshalled := make([]byte, 0)
+
+	URL := Settings.URL + "/api/v1/models"
+
+	req, err := http.NewRequest(
+		"POST",
+		URL,
+		bytes.NewReader(marshalled),
+	)
+	req.Header.Set("Authorization", "Bearer "+Settings.Token)
+
+	if err != nil {
+		log.Fatal("Can't build api request")
+		return err
+	}
+
+	response, err := client.Do(req)
+
+	if err != nil {
+		log.Fatal("Can't send api request: ", err)
+		return err
+	}
+
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+
+	if err != nil {
+		log.Fatal("Can't read response body")
+		return err
+	}
+
+	log.Print(string(responseBody))
+
+	//var giga_response *domain.GigaResponse
+
+	//error := json.Unmarshal(responseBody, &giga_response)
+	//
+	//if error != nil {
+	//	log.Fatal(error, response)
+	//	return nil, err
+	//}
+
+	return err
+}
+
+func GetToken_err() (string, error) {
+	Otvet := ""
+	var err error
+
+	client := &http.Client{}
+
+	marshalled := make([]byte, 0)
+
+	URL := "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+	//URL := "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+
+	req, err := http.NewRequest(
+		"POST",
+		URL,
+		bytes.NewReader(marshalled),
+	)
+
+	uuid := uuid.New()
+	sUID := uuid.String()
+
+	req.Header.Set("Authorization", "Bearer "+Settings.Token)
+	req.Header.Set("RqUID", sUID)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if err != nil {
+		log.Fatal("Can't build api request")
+		return Otvet, err
+	}
+
+	response, err := client.Do(req)
+
+	if err != nil {
+		TextError := fmt.Sprint("Can't send api request: ", err)
+		log.Error(TextError)
+		err = errors.New(TextError)
+		return Otvet, err
+	}
+
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+
+	if err != nil {
+		log.Fatal("Can't read response body")
+		return Otvet, err
+	}
+
+	log.Print(string(responseBody))
+
+	return Otvet, err
 }
