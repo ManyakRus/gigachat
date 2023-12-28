@@ -1,0 +1,8 @@
+/.env
+/cover.out
+
+/internal/v0/app/.env
+
+.env
+/.idea/
+/bin/.env

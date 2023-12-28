@@ -1,1 +1,1 @@
-# gigachat_api
+# gigachat
